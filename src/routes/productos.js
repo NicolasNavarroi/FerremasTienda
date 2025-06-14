@@ -6,6 +6,7 @@ const { authMiddleware, checkRole } = require('../middlewares');
 // Rutas públicas
 router.get('/', productoController.listarProductos);
 router.get('/:id', productoController.obtenerProducto);
+router.get('/:id/disponibilidad', productoController.obtenerDisponibilidad);
 
 // Rutas protegidas para admin y trabajadores
 router.post('/', 
@@ -26,7 +27,7 @@ router.delete('/:id',
   productoController.eliminarProducto
 );
 
-// Ruta especial para actualizar stock
+// Rutas para gestión de stock
 router.patch('/:id/stock', 
   authMiddleware, 
   checkRole([1, 2]),

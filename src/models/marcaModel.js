@@ -40,7 +40,6 @@ class Marca {
     return result.affectedRows;
   }
 
-  // Nuevo método para buscar marca por nombre (insensible a mayúsculas)
   static async buscarPorNombre(nombre) {
     const [rows] = await db.query(
       'SELECT id_marca, nombre FROM marca WHERE LOWER(nombre) = ?',
