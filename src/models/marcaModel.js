@@ -11,7 +11,7 @@ class Marca {
 
   static async obtenerTodas() {
     const [rows] = await db.query(
-      'SELECT id_marca, nombre, descripcion, logo, logo_path FROM marca'
+      'SELECT id_marca, nombre, descripcion, logo, logo_path FROM marca ORDER BY nombre ASC'
     );
     return rows;
   }

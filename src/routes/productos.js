@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const productoController = require('../controllers/productoController');
-const { authMiddleware, checkRole } = require('../middlewares');
+const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
 
 // Rutas públicas
 router.get('/', productoController.listarProductos);

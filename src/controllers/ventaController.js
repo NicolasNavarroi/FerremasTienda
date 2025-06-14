@@ -1,6 +1,6 @@
 const VentaModel = require('../models/ventaModel');
 const CarritoModel = require('../models/carritoModel');
-const { verificarStock } = require('../middlewares/stockMiddleware');
+const { verificarStock } = require('../middleware/stockMiddleware');
 
 class VentaController {
     async crearVenta(req, res) {

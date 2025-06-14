@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const usuarioController = require('../controllers/usuarioController');
-const { authMiddleware, checkRole } = require('../middlewares');
+const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
 
 // Rutas públicas
 router.post('/register', usuarioController.registrar);

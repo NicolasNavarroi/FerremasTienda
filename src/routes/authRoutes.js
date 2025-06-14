@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { validateLogin, validateRegister } = require('../middlewares/authValidators');
+const { validateLogin, validateRegister } = require('../middleware/authValidators');
 
 // Ruta de registro
 router.post('/register', validateRegister, authController.register);

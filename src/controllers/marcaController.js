@@ -3,34 +3,75 @@ const fs = require('fs');
 const path = require('path');
 
 const marcaController = {
-  crear: async (req, res) => {
-    try {
-      const { nombre, descripcion } = req.body;
-      const { filename: logo, path: filePath } = req.file;
-
-      const logo_path = `marcas/${nombre.toLowerCase()}/${logo}`;
-      
-      // Mover el archivo a su ubicación final
-      const targetDir = path.join('public', 'marcas', nombre.toLowerCase());
-      const targetPath = path.join(targetDir, logo);
-      
-      fs.mkdirSync(targetDir, { recursive: true });
-      fs.renameSync(filePath, targetPath);
-
-      const id = await Marca.crear({ nombre, descripcion, logo, logo_path });
-      
-      res.status(201).json({ id });
-    } catch (error) {
-      res.status(500).json({ error: 'Error al crear marca' });
+  // En el método crear, actualiza el manejo de errores:
+crear: async (req, res) => {
+  try {
+    const { nombre, descripcion } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Logo es requerido' 
+      });
     }
-  },
 
+    const { filename: logo, path: tempPath } = req.file;
+    
+    // Validar nombre de marca
+    if (!nombre || typeof nombre !== 'string') {
+      // Eliminar archivo subido si la validación falla
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+      return res.status(400).json({
+        success: false,
+        error: 'Nombre de marca inválido'
+      });
+    }
+
+    // Crear estructura de directorios
+    const targetDir = path.join('public', 'marcas', nombre.toLowerCase());
+    const targetPath = path.join(targetDir, logo);
+    
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.renameSync(tempPath, targetPath);
+
+    const logo_path = `marcas/${nombre.toLowerCase()}/${logo}`;
+    const id = await Marca.crear({ nombre, descripcion, logo, logo_path });
+    
+    res.status(201).json({ 
+      success: true,
+      id,
+      message: 'Marca creada exitosamente'
+    });
+  } catch (error) {
+    // Limpiar archivos temporales en caso de error
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    console.error('Error al crear marca:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al crear marca',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+},
   listar: async (req, res) => {
     try {
       const marcas = await Marca.obtenerTodas();
-      res.json(marcas);
+      res.json({
+        success: true,
+        count: marcas.length,
+        data: marcas
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Error al listar marcas' });
+      console.error('Error al listar marcas:', error);
+      res.status(500).json({ 
+        error: 'Error al listar marcas',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   },
 
@@ -38,11 +79,21 @@ const marcaController = {
     try {
       const marca = await Marca.obtenerPorId(req.params.id);
       if (!marca) {
-        return res.status(404).json({ error: 'Marca no encontrada' });
+        return res.status(404).json({ 
+          error: 'Marca no encontrada',
+          details: `No se encontró marca con ID ${req.params.id}`
+        });
       }
-      res.json(marca);
+      res.json({
+        success: true,
+        data: marca
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Error al obtener marca' });
+      console.error('Error al obtener marca:', error);
+      res.status(500).json({ 
+        error: 'Error al obtener marca',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   },
 
@@ -51,48 +102,80 @@ const marcaController = {
       const { id } = req.params;
       const datos = req.body;
       
+      // Si se subió nuevo logo
       if (req.file) {
-        const { filename: logo, path: filePath } = req.file;
+        const { filename: logo, path: tempPath } = req.file;
         const targetDir = path.join('public', 'marcas', datos.nombre.toLowerCase());
         const targetPath = path.join(targetDir, logo);
         
         fs.mkdirSync(targetDir, { recursive: true });
-        fs.renameSync(filePath, targetPath);
+        fs.renameSync(tempPath, targetPath);
 
         datos.logo = logo;
         datos.logo_path = `marcas/${datos.nombre.toLowerCase()}/${logo}`;
       }
 
       const actualizado = await Marca.actualizar(id, datos);
-      res.json({ actualizado });
+      
+      if (actualizado === 0) {
+        return res.status(404).json({ 
+          error: 'Marca no encontrada',
+          details: `No se encontró marca con ID ${id} para actualizar`
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Marca actualizada exitosamente',
+        updated: actualizado
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Error al actualizar marca' });
+      console.error('Error al actualizar marca:', error);
+      res.status(500).json({ 
+        error: 'Error al actualizar marca',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   },
 
   eliminar: async (req, res) => {
     try {
       const { id } = req.params;
-      await Marca.eliminar(id);
-      res.json({ mensaje: 'Marca eliminada' });
+      const eliminado = await Marca.eliminar(id);
+      
+      if (eliminado === 0) {
+        return res.status(404).json({ 
+          error: 'Marca no encontrada',
+          details: `No se encontró marca con ID ${id} para eliminar`
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Marca eliminada exitosamente',
+        deleted: eliminado
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Error al eliminar marca' });
+      console.error('Error al eliminar marca:', error);
+      res.status(500).json({ 
+        error: 'Error al eliminar marca',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   },
 
-  // Nuevo método para carga inicial de logos
   cargaInicial: async (req, res) => {
     try {
-      const tempDir = 'temp_uploads/marcas';
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No se subieron archivos' });
+      }
+
+      const tempDir = path.join(__dirname, '../../temp_uploads');
       const results = [];
 
-      // Procesar cada archivo subido
       for (const file of req.files) {
         try {
-          // Extraer nombre de marca del archivo (ej: "truper_logo.png")
           const marcaName = file.originalname.split('_')[0].toLowerCase();
-          
-          // Buscar marca en la base de datos
           const marca = await Marca.buscarPorNombre(marcaName);
           
           if (marca) {
@@ -100,11 +183,9 @@ const marcaController = {
             const newFilename = `${marcaName}_logo${path.extname(file.originalname)}`;
             const targetPath = path.join(targetDir, newFilename);
 
-            // Crear directorio y mover archivo
             fs.mkdirSync(targetDir, { recursive: true });
             fs.renameSync(file.path, targetPath);
 
-            // Actualizar base de datos
             await Marca.actualizar(marca.id_marca, {
               logo: newFilename,
               logo_path: `marcas/${marcaName}/${newFilename}`
@@ -135,13 +216,15 @@ const marcaController = {
       fs.rmSync(tempDir, { recursive: true, force: true });
 
       res.json({
+        success: true,
         message: 'Carga inicial completada',
         results
       });
     } catch (error) {
+      console.error('Error en carga inicial:', error);
       res.status(500).json({ 
         error: 'Error en carga inicial',
-        details: error.message 
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }

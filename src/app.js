@@ -7,6 +7,7 @@ const { createServer } = require('http');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const errorHandler = require('./middleware/errorHandler');
+const pool = require('./config/db'); // Asegúrate que la ruta sea correcta
 
 // Importación de rutas
 const authRoutes = require('./routes/authRoutes');
@@ -23,73 +24,7 @@ const ventaRoutes = require('./routes/ventas');
 const app = express();
 const httpServer = createServer(app);
 
-// Configuración mejorada del pool de MySQL
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || null,
-  database: process.env.DB_NAME || 'tienda',
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  timezone: 'local',
-  charset: 'utf8mb4',
-  decimalNumbers: true, // Importante para manejar precios correctamente
-  multipleStatements: false, // Seguridad adicional
-  connectTimeout: 10000, // 10 segundos de timeout
-  dateStrings: true // Para manejar fechas como strings
-});
 
-// Verificación de conexión mejorada con chequeo de tablas esenciales
-const verifyDatabase = async () => {
-  const requiredTables = [
-    'Usuario', 'Producto', 'Carrito_compra', 
-    'Detalle_carrito', 'VENTA', 'Promocion'
-  ];
-  
-  const connection = await pool.getConnection();
-  try {
-    console.log('\x1b[32m', '🔌 Conectando a la base de datos...', '\x1b[0m');
-    
-    // Verificar tablas esenciales
-    const [tables] = await connection.query(
-      "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?",
-      [process.env.DB_NAME || 'tienda']
-    );
-    
-    const existingTables = tables.map(t => t.TABLE_NAME);
-    const missingTables = requiredTables.filter(t => !existingTables.includes(t));
-    
-    if (missingTables.length > 0) {
-      console.error('\x1b[31m', `❌ Tablas faltantes: ${missingTables.join(', ')}`, '\x1b[0m');
-      throw new Error('Estructura de base de datos incompleta');
-    }
-    
-    console.log('\x1b[32m', '✅ Base de datos verificada correctamente', '\x1b[0m');
-  } catch (error) {
-    console.error('\x1b[31m', '❌ Error en la base de datos:', {
-      code: error.code,
-      message: error.message
-    }, '\x1b[0m');
-    
-    // Intento de recrear estructura si está en desarrollo
-    if (process.env.NODE_ENV === 'development') {
-      console.log('\x1b[33m', '⚠️ Intentando recrear estructura...', '\x1b[0m');
-      try {
-        await require('./database/setup')(connection);
-      } catch (setupError) {
-        console.error('\x1b[31m', '❌ Error al recrear estructura:', setupError.message, '\x1b[0m');
-      }
-    }
-    
-    process.exit(1);
-  } finally {
-    connection.release();
-  }
-};
-
-verifyDatabase();
 
 // Configuración de middlewares mejorada
 app.use(helmet({
