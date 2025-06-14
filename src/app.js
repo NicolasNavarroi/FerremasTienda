@@ -7,7 +7,7 @@ const { createServer } = require('http');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const errorHandler = require('./middleware/errorHandler');
-const pool = require('./config/db'); // Asegúrate que la ruta sea correcta
+const pool = require('./config/db');
 
 // Importación de rutas
 const authRoutes = require('./routes/authRoutes');
@@ -23,8 +23,6 @@ const ventaRoutes = require('./routes/ventas');
 // Inicialización
 const app = express();
 const httpServer = createServer(app);
-
-
 
 // Configuración de middlewares mejorada
 app.use(helmet({
@@ -59,20 +57,20 @@ app.use(cors({
 }));
 
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', {
-  skip: (req) => req.path === '/api/status' // No loggear pings de salud
+  skip: (req) => req.path === '/api/status'
 }));
 
 app.use(express.json({ 
   limit: '10mb',
   verify: (req, res, buf) => {
-    req.rawBody = buf.toString(); // Para validación de webhooks
+    req.rawBody = buf.toString();
   }
 }));
 
 app.use(express.urlencoded({ 
   extended: true, 
   limit: '10mb',
-  parameterLimit: 100 // Máximo 100 parámetros
+  parameterLimit: 100
 }));
 
 // Configuración de archivos estáticos optimizada
@@ -149,19 +147,23 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 // Configuración del servidor
-const PORT = process.env.PORT || 4000;
-const HOST = process.env.HOST || '0.0.0.0';
+const PORT = process.env.PORT || 3000;
 
 // Iniciar servidor con manejo de errores
-const server = httpServer.listen(PORT, HOST, () => {
-  const { address, port } = server.address();
-  console.log('\x1b[36m', `🚀 Servidor escuchando en http://${address}:${port}`, '\x1b[0m');
+httpServer.listen(PORT, () => {
+  const { address, port } = httpServer.address();
+  console.log('\x1b[36m', `🚀 Servidor corriendo en http://localhost:${port}`, '\x1b[0m');
   console.log('\x1b[33m', `🔧 Entorno: ${process.env.NODE_ENV || 'development'}`, '\x1b[0m');
   console.log('\x1b[35m', `🗄️  Base de datos: ${process.env.DB_NAME || 'tienda'}`, '\x1b[0m');
 });
 
+// Manejo de errores no capturados
+process.on('unhandledRejection', (err) => {
+  console.error('\x1b[31m', '⚠️ Error no capturado:', err, '\x1b[0m');
+});
+
 // Manejo de errores del servidor
-server.on('error', (error) => {
+httpServer.on('error', (error) => {
   console.error('\x1b[31m', '⚠️ Error del servidor:', error.message, '\x1b[0m');
   
   if (error.code === 'EADDRINUSE') {
@@ -176,7 +178,7 @@ const shutdown = async (signal) => {
   console.log('\x1b[33m', `⚠️ Recibido ${signal}. Cerrando servidor...`, '\x1b[0m');
   
   try {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => httpServer.close(resolve));
     await pool.end();
     console.log('\x1b[32m', '✅ Servidor cerrado correctamente', '\x1b[0m');
     process.exit(0);
@@ -193,5 +195,5 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 module.exports = {
   app,
   pool,
-  server
+  server: httpServer
 };
