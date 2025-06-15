@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { updateProfile, changePassword } from '../../api/profile';
-import './ProfileStyles.css';
+import "../../styles/ProfileStyles.css";
 
 export const ProfilePage = () => {
   const { user, logout } = useAuth();

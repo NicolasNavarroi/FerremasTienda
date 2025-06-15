@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@context/AuthContext';
 import { FaUserCog, FaUserTie, FaUser, FaTools, FaSignOutAlt, FaHome, FaShoppingCart, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
-import './Navbar.css';
+import '@styles/Navbar.css';
 
 export const Navbar = () => {
   const { user, logout, isAdmin, isEmployee } = useAuth();
@@ -15,23 +15,21 @@ export const Navbar = () => {
         </Link>
       </div>
       <div className="navbar-links">
-        {/* Opciones comunes a todos los usuarios */}
         <Link to="/products">
           <FaShoppingCart className="icon" /> Productos
         </Link>
 
         {user ? (
           <>
-            {/* Opciones para usuarios autenticados */}
             {isAdmin && (
-              <Link to="/admin/users" className="admin-link">
+            <Link to="/admin/usermanagement" className="admin-link">
                 <MdDashboard className="icon" /> Panel Admin
-              </Link>
+            </Link>
             )}
             {isEmployee && (
-              <Link to="/employee/products" className="employee-link">
+            <Link to="/employee/productmanagement" className="employee-link">
                 <MdDashboard className="icon" /> Panel Empleado
-              </Link>
+            </Link>
             )}
             {!isAdmin && !isEmployee && (
               <Link to="/profile">
@@ -53,7 +51,6 @@ export const Navbar = () => {
           </>
         ) : (
           <>
-            {/* Opciones para invitados */}
             <Link to="/login">
               <FaSignInAlt className="icon" /> Iniciar sesión
             </Link>

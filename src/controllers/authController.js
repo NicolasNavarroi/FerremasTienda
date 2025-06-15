@@ -2,9 +2,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const { generateToken } = require('../utils/authUtils');
-const { validateRegister, validateLogin } = require('../middleware/authValidators');
 
-// Configuración de roles para mejor mantenibilidad
+// Configuración de roles
 const ROLES = {
   ADMIN: 1,
   EMPLOYEE: 2,
@@ -12,15 +11,11 @@ const ROLES = {
 };
 
 const authController = {
-  /**
-   * Registro de nuevos usuarios (clientes)
-   */
   register: async (req, res, next) => {
     const connection = await pool.getConnection();
     try {
       const { username, email, password } = req.body;
 
-      // Validación de campos
       const errors = {};
       if (!username) errors.username = 'Nombre de usuario requerido';
       if (!email) errors.email = 'Email requerido';
@@ -34,7 +29,6 @@ const authController = {
         });
       }
 
-      // Verificar si el usuario ya existe
       const [existingUser] = await connection.query(
         'SELECT idUsuario, email, username FROM Usuario WHERE email = ? OR username = ? LIMIT 1', 
         [email, username]
@@ -54,16 +48,12 @@ const authController = {
 
       await connection.beginTransaction();
 
-      // Hash de la contraseña
       const hashedPassword = await bcrypt.hash(password, 12);
-
-      // Insertar usuario
       const [userResult] = await connection.query(
         'INSERT INTO Usuario (username, email, Clave, id_tipo_usuario) VALUES (?, ?, ?, ?)',
         [username, email.toLowerCase(), hashedPassword, ROLES.CLIENT]
       );
 
-      // Crear perfil básico
       await connection.query(
         'INSERT INTO Perfil_usuario (id_usuario) VALUES (?)',
         [userResult.insertId]
@@ -71,7 +61,6 @@ const authController = {
 
       await connection.commit();
 
-      // Generar token
       const token = generateToken({
         id: userResult.insertId,
         username,
@@ -100,16 +89,10 @@ const authController = {
     }
   },
 
-  /**
-   * Inicio de sesión para todos los tipos de usuario
-   */
   login: async (req, res, next) => {
     try {
       let { email, password } = req.body;
-      email = email.toLowerCase().trim(); // Normalización del email
-
-      // Debug: Verificar datos recibidos
-      console.log('Intento de login con:', { email, password });
+      email = email.toLowerCase().trim();
 
       if (!email || !password) {
         return res.status(400).json({ 
@@ -118,21 +101,15 @@ const authController = {
         });
       }
 
-      // Consulta mejorada
       const [users] = await pool.query(
-        `SELECT 
-          u.idUsuario, 
-          u.Username, 
-          u.Email, 
-          u.Clave,
-          u.id_tipo_usuario
+        `SELECT u.idUsuario, u.Username, u.Email, u.Clave, u.id_tipo_usuario, t.Tipo_usuario as nombre_rol 
          FROM Usuario u
+         JOIN Tipo_usuario t ON u.id_tipo_usuario = t.id_Tipo_usuario
          WHERE u.email = ? LIMIT 1`, 
         [email]
       );
       
       if (users.length === 0) {
-        console.log('Usuario no encontrado para email:', email);
         return res.status(401).json({ 
           success: false,
           error: 'Credenciales inválidas'
@@ -140,13 +117,7 @@ const authController = {
       }
 
       const user = users[0];
-      
-      // Debug: Verificar hash almacenado
-      console.log('Hash almacenado:', user.Clave);
-      
-      // Comparación de contraseñas
       const isValidPassword = await bcrypt.compare(password, user.Clave);
-      console.log('Resultado comparación:', isValidPassword);
 
       if (!isValidPassword) {
         return res.status(401).json({ 
@@ -155,7 +126,6 @@ const authController = {
         });
       }
 
-      // Generar token
       const token = generateToken({
         id: user.idUsuario,
         username: user.Username,
@@ -163,7 +133,8 @@ const authController = {
         role: user.id_tipo_usuario
       });
 
-      res.json({
+      // Añadir redirección para admin
+      const response = {
         success: true,
         message: 'Inicio de sesión exitoso',
         token,
@@ -171,27 +142,28 @@ const authController = {
           id: user.idUsuario,
           username: user.Username,
           email: user.Email,
-          role: user.id_tipo_usuario
+          role: user.id_tipo_usuario,
+          roleName: user.nombre_rol
         }
-      });
+      };
+
+      // Solo añadir redirectTo si es admin
+      if (user.id_tipo_usuario === ROLES.ADMIN) {
+        response.redirectTo = '/admin/user-management';
+      }
+
+      res.json(response);
 
     } catch (error) {
       console.error('Error en login:', error);
       next(error);
     }
   },
-  /**
-   * Verificación de token
-   */
+
   verifyToken: async (req, res, next) => {
     try {
       const [user] = await pool.query(
-        `SELECT 
-          u.idUsuario, 
-          u.Username, 
-          u.Email,
-          u.id_tipo_usuario,
-          t.Tipo_usuario as nombre_rol
+        `SELECT u.idUsuario, u.Username, u.Email, u.id_tipo_usuario, t.Tipo_usuario as nombre_rol
          FROM Usuario u
          JOIN Tipo_usuario t ON u.id_tipo_usuario = t.id_Tipo_usuario
          WHERE u.idUsuario = ? LIMIT 1`, 
@@ -210,35 +182,32 @@ const authController = {
         [req.user.id]
       );
 
-      res.json({
+      const response = {
         success: true,
         isValid: true,
         user: {
           ...user[0],
           profile: profile[0] || null
         }
-      });
+      };
+
+      // Añadir redirección si es admin y no está en ruta admin
+      if (user[0].id_tipo_usuario === ROLES.ADMIN && !req.originalUrl.startsWith('/admin')) {
+        response.redirectTo = '/admin/user-management';
+        response.message = 'Redirigiendo a panel de administración';
+      }
+
+      res.json(response);
     } catch (error) {
       console.error('Error al verificar token:', error);
       next(error);
     }
   },
 
-  /**
-   * Obtener información del usuario actual
-   */
   getCurrentUser: async (req, res, next) => {
     try {
       const [user] = await pool.query(
-        `SELECT 
-          u.idUsuario, 
-          u.Username, 
-          u.Email,
-          u.id_tipo_usuario,
-          t.Tipo_usuario as nombre_rol,
-          p.Nombre_apellido,
-          p.Telefono,
-          p.Direccion
+        `SELECT u.idUsuario, u.Username, u.Email, u.id_tipo_usuario, t.Tipo_usuario as nombre_rol, p.Nombre_apellido, p.Telefono, p.Direccion
          FROM Usuario u
          JOIN Tipo_usuario t ON u.id_tipo_usuario = t.id_Tipo_usuario
          LEFT JOIN Perfil_usuario p ON u.idUsuario = p.id_usuario
@@ -263,9 +232,6 @@ const authController = {
     }
   },
 
-  /**
-   * Función especial para crear admin (solo para desarrollo)
-   */
   createAdmin: async (req, res, next) => {
     if (process.env.NODE_ENV !== 'development') {
       return res.status(403).json({ 
@@ -278,7 +244,6 @@ const authController = {
     try {
       const { username, email, password } = req.body;
 
-      // Validación básica
       if (!username || !email || !password) {
         return res.status(400).json({ 
           success: false,
@@ -287,17 +252,12 @@ const authController = {
       }
 
       await connection.beginTransaction();
-
-      // Hash de la contraseña
       const hashedPassword = await bcrypt.hash(password, 12);
-
-      // Insertar admin
       const [userResult] = await connection.query(
         'INSERT INTO Usuario (username, email, Clave, id_tipo_usuario) VALUES (?, ?, ?, ?)',
         [username, email.toLowerCase(), hashedPassword, ROLES.ADMIN]
       );
 
-      // Crear perfil básico
       await connection.query(
         'INSERT INTO Perfil_usuario (id_usuario) VALUES (?)',
         [userResult.insertId]

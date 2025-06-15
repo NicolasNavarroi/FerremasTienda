@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getProducts } from '../api/products';
 import { FaSearch, FaFilter, FaShoppingCart, FaStar } from 'react-icons/fa';
-import './ProductCatalog.css';
+import "../styles/ProductCatalog.css";
 
 export const ProductCatalog = () => {
   const [products, setProducts] = useState([]);

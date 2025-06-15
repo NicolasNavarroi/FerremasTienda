@@ -1,20 +1,17 @@
-// src/pages/LoginPage.jsx
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await login({ email, password });
-      navigate('/');
+      // La redirección ahora se maneja en AuthContext
     } catch (err) {
       setError(err.error || 'Error al iniciar sesión');
     }

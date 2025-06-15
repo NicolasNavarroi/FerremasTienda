@@ -1,7 +1,7 @@
 // src/pages/employee/ProductManagement.jsx
 import { useState, useEffect } from 'react';
 import api from '../../api/config';
-import './EmployeeStyles.css';
+import "../../styles/EmployeeStyles.css";
 
 export const ProductManagement = () => {
   const [products, setProducts] = useState([]);
