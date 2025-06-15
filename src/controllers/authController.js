@@ -4,94 +4,99 @@ const pool = require('../config/db');
 const { generateToken } = require('../utils/authUtils');
 const { validateRegister, validateLogin } = require('../middleware/authValidators');
 
+// Configuración de roles para mejor mantenibilidad
+const ROLES = {
+  ADMIN: 1,
+  EMPLOYEE: 2,
+  CLIENT: 3
+};
+
 const authController = {
   /**
    * Registro de nuevos usuarios (clientes)
    */
   register: async (req, res, next) => {
+    const connection = await pool.getConnection();
     try {
       const { username, email, password } = req.body;
 
       // Validación de campos
-      if (!username || !email || !password) {
+      const errors = {};
+      if (!username) errors.username = 'Nombre de usuario requerido';
+      if (!email) errors.email = 'Email requerido';
+      if (!password) errors.password = 'Contraseña requerida';
+      
+      if (Object.keys(errors).length > 0) {
         return res.status(400).json({ 
+          success: false,
           error: 'Todos los campos son requeridos',
-          details: {
-            username: 'Nombre de usuario requerido',
-            email: 'Email requerido',
-            password: 'Contraseña requerida'
-          }
+          details: errors
         });
       }
 
       // Verificar si el usuario ya existe
-      const [userExists] = await pool.query(
-        'SELECT idUsuario FROM Usuario WHERE email = ? OR username = ? LIMIT 1', 
+      const [existingUser] = await connection.query(
+        'SELECT idUsuario, email, username FROM Usuario WHERE email = ? OR username = ? LIMIT 1', 
         [email, username]
       );
       
-      if (userExists.length > 0) {
+      if (existingUser.length > 0) {
+        const details = {};
+        if (existingUser[0].email === email) details.email = 'Email ya registrado';
+        if (existingUser[0].username === username) details.username = 'Nombre de usuario en uso';
+        
         return res.status(409).json({ 
+          success: false,
           error: 'El usuario ya existe',
-          details: {
-            email: userExists[0].email === email ? 'Email ya registrado' : null,
-            username: userExists[0].username === username ? 'Nombre de usuario en uso' : null
-          }
+          details
         });
       }
+
+      await connection.beginTransaction();
 
       // Hash de la contraseña
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Crear usuario en transacción
-      const connection = await pool.getConnection();
-      await connection.beginTransaction();
+      // Insertar usuario
+      const [userResult] = await connection.query(
+        'INSERT INTO Usuario (username, email, Clave, id_tipo_usuario) VALUES (?, ?, ?, ?)',
+        [username, email.toLowerCase(), hashedPassword, ROLES.CLIENT]
+      );
 
-      try {
-        // Insertar usuario
-        const [userResult] = await connection.query(
-          'INSERT INTO Usuario (username, email, Clave, id_tipo_usuario) VALUES (?, ?, ?, ?)',
-          [username, email, hashedPassword, 3] // 3 = ID para cliente
-        );
+      // Crear perfil básico
+      await connection.query(
+        'INSERT INTO Perfil_usuario (id_usuario) VALUES (?)',
+        [userResult.insertId]
+      );
 
-        // Crear perfil básico
-        await connection.query(
-          'INSERT INTO Perfil_usuario (id_usuario) VALUES (?)',
-          [userResult.insertId]
-        );
+      await connection.commit();
 
-        await connection.commit();
+      // Generar token
+      const token = generateToken({
+        id: userResult.insertId,
+        username,
+        role: ROLES.CLIENT,
+        email
+      });
 
-        // Generar token
-        const token = generateToken({
+      res.status(201).json({
+        success: true,
+        message: 'Usuario registrado exitosamente',
+        token,
+        user: {
           id: userResult.insertId,
           username,
-          role: 3,
-          email
-        });
-
-        res.status(201).json({
-          success: true,
-          message: 'Usuario registrado exitosamente',
-          token,
-          user: {
-            id: userResult.insertId,
-            username,
-            email,
-            role: 3
-          }
-        });
-
-      } catch (error) {
-        await connection.rollback();
-        throw error;
-      } finally {
-        connection.release();
-      }
+          email,
+          role: ROLES.CLIENT
+        }
+      });
 
     } catch (error) {
+      await connection.rollback();
       console.error('Error en registro:', error);
       next(error);
+    } finally {
+      connection.release();
     }
   },
 
@@ -100,68 +105,63 @@ const authController = {
    */
   login: async (req, res, next) => {
     try {
-      const { email, password } = req.body;
+      let { email, password } = req.body;
+      email = email.toLowerCase().trim(); // Normalización del email
 
-      // Validación básica
+      // Debug: Verificar datos recibidos
+      console.log('Intento de login con:', { email, password });
+
       if (!email || !password) {
         return res.status(400).json({ 
-          error: 'Email y contraseña son requeridos',
-          details: {
-            email: !email ? 'Email es requerido' : null,
-            password: !password ? 'Contraseña es requerida' : null
-          }
+          success: false,
+          error: 'Email y contraseña son requeridos'
         });
       }
 
-      // Buscar usuario con información de rol
+      // Consulta mejorada
       const [users] = await pool.query(
         `SELECT 
           u.idUsuario, 
           u.Username, 
           u.Email, 
           u.Clave,
-          u.id_tipo_usuario,
-          t.Tipo_usuario as nombre_rol
+          u.id_tipo_usuario
          FROM Usuario u
-         JOIN Tipo_usuario t ON u.id_tipo_usuario = t.id_Tipo_usuario
          WHERE u.email = ? LIMIT 1`, 
         [email]
       );
       
       if (users.length === 0) {
+        console.log('Usuario no encontrado para email:', email);
         return res.status(401).json({ 
           success: false,
-          error: 'Credenciales inválidas',
-          details: 'Usuario no encontrado'
+          error: 'Credenciales inválidas'
         });
       }
 
       const user = users[0];
-
-      // Verificar contraseña
+      
+      // Debug: Verificar hash almacenado
+      console.log('Hash almacenado:', user.Clave);
+      
+      // Comparación de contraseñas
       const isValidPassword = await bcrypt.compare(password, user.Clave);
+      console.log('Resultado comparación:', isValidPassword);
+
       if (!isValidPassword) {
         return res.status(401).json({ 
           success: false,
-          error: 'Credenciales inválidas',
-          details: 'Contraseña incorrecta'
+          error: 'Credenciales inválidas'
         });
       }
 
-      // Generar token con más información
+      // Generar token
       const token = generateToken({
         id: user.idUsuario,
         username: user.Username,
         email: user.Email,
-        role: user.id_tipo_usuario,
-        roleName: user.nombre_rol
+        role: user.id_tipo_usuario
       });
-
-      // Obtener información adicional del perfil
-      const [profile] = await pool.query(
-        'SELECT Nombre_apellido, Telefono FROM Perfil_usuario WHERE id_usuario = ?',
-        [user.idUsuario]
-      );
 
       res.json({
         success: true,
@@ -171,9 +171,7 @@ const authController = {
           id: user.idUsuario,
           username: user.Username,
           email: user.Email,
-          role: user.id_tipo_usuario,
-          roleName: user.nombre_rol,
-          profile: profile[0] || null
+          role: user.id_tipo_usuario
         }
       });
 
@@ -182,14 +180,11 @@ const authController = {
       next(error);
     }
   },
-
   /**
    * Verificación de token
    */
   verifyToken: async (req, res, next) => {
     try {
-      // El middleware de autenticación ya verificó el token
-      // Podemos agregar información adicional del usuario aquí
       const [user] = await pool.query(
         `SELECT 
           u.idUsuario, 
@@ -265,6 +260,63 @@ const authController = {
     } catch (error) {
       console.error('Error al obtener usuario:', error);
       next(error);
+    }
+  },
+
+  /**
+   * Función especial para crear admin (solo para desarrollo)
+   */
+  createAdmin: async (req, res, next) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Acceso prohibido en producción' 
+      });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      const { username, email, password } = req.body;
+
+      // Validación básica
+      if (!username || !email || !password) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Todos los campos son requeridos'
+        });
+      }
+
+      await connection.beginTransaction();
+
+      // Hash de la contraseña
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Insertar admin
+      const [userResult] = await connection.query(
+        'INSERT INTO Usuario (username, email, Clave, id_tipo_usuario) VALUES (?, ?, ?, ?)',
+        [username, email.toLowerCase(), hashedPassword, ROLES.ADMIN]
+      );
+
+      // Crear perfil básico
+      await connection.query(
+        'INSERT INTO Perfil_usuario (id_usuario) VALUES (?)',
+        [userResult.insertId]
+      );
+
+      await connection.commit();
+
+      res.status(201).json({
+        success: true,
+        message: 'Usuario admin creado exitosamente',
+        userId: userResult.insertId
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      console.error('Error al crear admin:', error);
+      next(error);
+    } finally {
+      connection.release();
     }
   }
 };

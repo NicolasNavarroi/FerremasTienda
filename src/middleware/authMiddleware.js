@@ -1,85 +1,70 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// Versión mejorada de tu middleware con:
-// 1. Validación reforzada
-// 2. Manejo de errores detallado
-// 3. Compatibilidad con checkRole
 const authMiddleware = (req, res, next) => {
   try {
-    // 1. Obtener token de múltiples fuentes (Header, Query, Cookies)
     const token = req.header('Authorization')?.replace('Bearer ', '') || 
                  req.query.token || 
                  req.cookies?.token;
 
     if (!token) {
       return res.status(401).json({ 
-        error: 'Acceso denegado',
-        details: 'Token no proporcionado en headers, query o cookies'
+        success: false,
+        error: 'Token no proporcionado'
       });
     }
 
-    // 2. Verificación segura del token
     const decoded = jwt.verify(token, process.env.JWT_SECRET, { 
-      algorithms: ['HS256'] // Fuerza algoritmo seguro
+      algorithms: ['HS256']
     });
 
-    // 3. Validación de datos mínimos en el token
-    if (!decoded.id || !decoded.tipo) {
-      throw new Error('Token corrupto: faltan campos esenciales');
-    }
-
-    // 4. Adjuntar datos mejorados al request
+    // Compatibilidad con ambos formatos (tipo/role)
     req.user = {
       id: decoded.id,
-      tipo: decoded.tipo,
+      role: decoded.role || decoded.tipo,
       username: decoded.username,
-      // Nuevos campos útiles para logs/auditoría:
-      sessionId: decoded.sessionId || null,
-      ip: req.ip,
-      userAgent: req.get('User-Agent')
+      email: decoded.email
     };
 
     next();
   } catch (error) {
     console.error('Error en autenticación:', error.message);
-
-    // Manejo específico de errores
+    
     const response = {
+      success: false,
       error: 'Autenticación fallida',
       details: error.message
     };
 
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        ...response,
-        solution: 'Renueva tu token con /api/auth/refresh'
-      });
+      response.solution = 'Token expirado, inicie sesión nuevamente';
+      return res.status(401).json(response);
     }
 
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
-        ...response,
-        solution: 'Inicia sesión nuevamente'
-      });
+      response.solution = 'Token inválido';
+      return res.status(401).json(response);
     }
 
-    res.status(401).json(response);
+    res.status(500).json(response);
   }
 };
 
-// Middleware para control de roles (complementario)
 const checkRole = (rolesPermitidos = []) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(500).json({ error: 'Middleware de roles ejecutado antes de authMiddleware' });
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error de autenticación' 
+      });
     }
 
-    if (!rolesPermitidos.includes(req.user.tipo)) {
+    if (!rolesPermitidos.includes(req.user.role)) {
       return res.status(403).json({
-        error: 'Acceso prohibido',
-        requiredRoles: rolesPermitidos,
-        yourRole: req.user.tipo
+        success: false,
+        error: 'Acceso no autorizado',
+        requiredRole: rolesPermitidos,
+        yourRole: req.user.role
       });
     }
 
