@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const tarjetaController = require('../controllers/tarjetaController');
-const { authMiddleware, checkRole } = require('../middlewares');
+const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
 
 // Todas las rutas requieren autenticación y rol de cliente
 router.use(authMiddleware);
