@@ -1,4 +1,3 @@
-// src/middleware/authValidators.js
 const { body, validationResult } = require('express-validator');
 
 const validateRegister = [
@@ -37,4 +36,7 @@ const validateLogin = [
   }
 ];
 
-module.exports = { validateRegister, validateLogin };
+module.exports = {
+  validateRegister,
+  validateLogin
+};

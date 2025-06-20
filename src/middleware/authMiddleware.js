@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
 const authMiddleware = (req, res, next) => {
   try {
@@ -14,11 +13,7 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET, { 
-      algorithms: ['HS256']
-    });
-
-    // Compatibilidad con ambos formatos (tipo/role)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = {
       id: decoded.id,
       role: decoded.role || decoded.tipo,
@@ -29,24 +24,11 @@ const authMiddleware = (req, res, next) => {
     next();
   } catch (error) {
     console.error('Error en autenticación:', error.message);
-    
-    const response = {
+    res.status(401).json({ 
       success: false,
       error: 'Autenticación fallida',
       details: error.message
-    };
-
-    if (error.name === 'TokenExpiredError') {
-      response.solution = 'Token expirado, inicie sesión nuevamente';
-      return res.status(401).json(response);
-    }
-
-    if (error.name === 'JsonWebTokenError') {
-      response.solution = 'Token inválido';
-      return res.status(401).json(response);
-    }
-
-    res.status(500).json(response);
+    });
   }
 };
 

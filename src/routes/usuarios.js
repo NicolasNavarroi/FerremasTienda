@@ -19,20 +19,16 @@ router.delete('/account', checkRole([3]), usuarioController.eliminarCuenta);
 const adminRouter = express.Router();
 adminRouter.use(checkRole([1])); // Solo admins
 
-// Ruta de redirección para admin
-adminRouter.get('/user-management', (req, res) => {
-  res.json({ 
-    success: true,
-    message: 'Panel de administración de usuarios',
-    user: req.user // Información del usuario admin
-  });
-});
+// Gestión completa de usuarios
+adminRouter.get('/users', usuarioController.listarUsuarios);
+adminRouter.get('/users/:id', usuarioController.obtenerUsuario);
+adminRouter.post('/users', usuarioController.crearUsuario);
+adminRouter.put('/users/:id', usuarioController.actualizarUsuario);
+adminRouter.delete('/users/:id', usuarioController.eliminarUsuario);
 
-// Rutas de gestión de trabajadores
-adminRouter.post('/trabajadores', usuarioController.crearTrabajador);
+// Rutas específicas para trabajadores (mantenidas por compatibilidad)
 adminRouter.get('/trabajadores', usuarioController.listarTrabajadores);
-adminRouter.put('/trabajadores/:id', usuarioController.actualizarTrabajador);
-adminRouter.delete('/trabajadores/:id', usuarioController.eliminarTrabajador);
+adminRouter.post('/trabajadores', usuarioController.crearTrabajador);
 
 // Montar rutas de admin bajo /admin
 router.use('/admin', adminRouter);

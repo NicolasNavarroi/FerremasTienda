@@ -17,6 +17,17 @@ class Usuario {
     return rows[0];
   }
 
+  static async obtenerPorId(idUsuario) {
+    const [rows] = await db.query(
+      `SELECT u.idUsuario, u.Username, u.Email, u.id_tipo_usuario, t.Tipo_usuario as tipo_nombre
+       FROM Usuario u
+       JOIN Tipo_usuario t ON u.id_tipo_usuario = t.id_Tipo_usuario
+       WHERE u.idUsuario = ?`,
+      [idUsuario]
+    );
+    return rows[0];
+  }
+
   static async obtenerPerfil(idUsuario) {
     const [rows] = await db.query(
       `SELECT u.idUsuario, u.Username, u.Email, p.Nombre_apellido, p.Direccion, p.Telefono 
@@ -49,6 +60,29 @@ class Usuario {
       'SELECT idUsuario, Username, Email FROM Usuario WHERE id_tipo_usuario = 2'
     );
     return rows;
+  }
+
+  static async listarUsuarios(roles = []) {
+    let query = `
+      SELECT u.idUsuario, u.Username, u.Email, u.id_tipo_usuario, t.Tipo_usuario as tipo_nombre
+      FROM Usuario u
+      JOIN Tipo_usuario t ON u.id_tipo_usuario = t.id_Tipo_usuario
+    `;
+    
+    if (roles.length > 0) {
+      query += ` WHERE u.id_tipo_usuario IN (${roles.join(',')})`;
+    }
+
+    const [rows] = await db.query(query);
+    return rows;
+  }
+
+  static async actualizarRol(idUsuario, nuevoRol) {
+    const [result] = await db.query(
+      'UPDATE Usuario SET id_tipo_usuario = ? WHERE idUsuario = ?',
+      [nuevoRol, idUsuario]
+    );
+    return result.affectedRows;
   }
 }
 

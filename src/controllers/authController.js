@@ -1,158 +1,80 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
-const { generateToken } = require('../utils/authUtils');
 
-// Configuración de roles
+// Configuración de roles y redirecciones
 const ROLES = {
   ADMIN: 1,
   EMPLOYEE: 2,
   CLIENT: 3
 };
 
+const ROLE_REDIRECTS = {
+  [ROLES.ADMIN]: '/admin/usermanagement',
+  [ROLES.EMPLOYEE]: '/employee/productmanagement',
+  [ROLES.CLIENT]: '/'
+};
+
 const authController = {
-  register: async (req, res, next) => {
-    const connection = await pool.getConnection();
-    try {
-      const { username, email, password } = req.body;
 
-      const errors = {};
-      if (!username) errors.username = 'Nombre de usuario requerido';
-      if (!email) errors.email = 'Email requerido';
-      if (!password) errors.password = 'Contraseña requerida';
-      
-      if (Object.keys(errors).length > 0) {
-        return res.status(400).json({ 
-          success: false,
-          error: 'Todos los campos son requeridos',
-          details: errors
-        });
-      }
+  register : async (req, res) => {
+  try {
+    // Implementación de registro
+    const { username, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 12);
+    
+    const [result] = await pool.query(
+      'INSERT INTO Usuario (username, email, Clave, id_tipo_usuario) VALUES (?, ?, ?, ?)',
+      [username, email, hashedPassword, ROLES.CLIENT]
+    );
 
-      const [existingUser] = await connection.query(
-        'SELECT idUsuario, email, username FROM Usuario WHERE email = ? OR username = ? LIMIT 1', 
-        [email, username]
-      );
-      
-      if (existingUser.length > 0) {
-        const details = {};
-        if (existingUser[0].email === email) details.email = 'Email ya registrado';
-        if (existingUser[0].username === username) details.username = 'Nombre de usuario en uso';
-        
-        return res.status(409).json({ 
-          success: false,
-          error: 'El usuario ya existe',
-          details
-        });
-      }
-
-      await connection.beginTransaction();
-
-      const hashedPassword = await bcrypt.hash(password, 12);
-      const [userResult] = await connection.query(
-        'INSERT INTO Usuario (username, email, Clave, id_tipo_usuario) VALUES (?, ?, ?, ?)',
-        [username, email.toLowerCase(), hashedPassword, ROLES.CLIENT]
-      );
-
-      await connection.query(
-        'INSERT INTO Perfil_usuario (id_usuario) VALUES (?)',
-        [userResult.insertId]
-      );
-
-      await connection.commit();
-
-      const token = generateToken({
-        id: userResult.insertId,
-        username,
-        role: ROLES.CLIENT,
-        email
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'Usuario registrado exitosamente',
-        token,
-        user: {
-          id: userResult.insertId,
-          username,
-          email,
-          role: ROLES.CLIENT
-        }
-      });
-
-    } catch (error) {
-      await connection.rollback();
-      console.error('Error en registro:', error);
-      next(error);
-    } finally {
-      connection.release();
-    }
-  },
+    res.status(201).json({
+      success: true,
+      userId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error en registro:', error);
+    throw error;
+  }
+},
 
   login: async (req, res, next) => {
     try {
       let { email, password } = req.body;
       email = email.toLowerCase().trim();
 
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false,
-          error: 'Email y contraseña son requeridos'
-        });
-      }
-
       const [users] = await pool.query(
-        `SELECT u.idUsuario, u.Username, u.Email, u.Clave, u.id_tipo_usuario, t.Tipo_usuario as nombre_rol 
-         FROM Usuario u
-         JOIN Tipo_usuario t ON u.id_tipo_usuario = t.id_Tipo_usuario
-         WHERE u.email = ? LIMIT 1`, 
+        `SELECT u.idUsuario, u.Username, u.Email, u.Clave, u.id_tipo_usuario 
+         FROM Usuario u WHERE u.email = ? LIMIT 1`, 
         [email]
       );
       
-      if (users.length === 0) {
-        return res.status(401).json({ 
-          success: false,
-          error: 'Credenciales inválidas'
-        });
+      if (users.length === 0 || !await bcrypt.compare(password, users[0].Clave)) {
+        return res.status(401).json({ error: 'Credenciales inválidas' });
       }
 
       const user = users[0];
-      const isValidPassword = await bcrypt.compare(password, user.Clave);
+      const token = jwt.sign(
+        {
+          id: user.idUsuario,
+          username: user.Username,
+          email: user.Email,
+          tipo: user.id_tipo_usuario
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '8h' }
+      );
 
-      if (!isValidPassword) {
-        return res.status(401).json({ 
-          success: false,
-          error: 'Credenciales inválidas'
-        });
-      }
-
-      const token = generateToken({
-        id: user.idUsuario,
-        username: user.Username,
-        email: user.Email,
-        role: user.id_tipo_usuario
-      });
-
-      // Añadir redirección para admin
-      const response = {
-        success: true,
-        message: 'Inicio de sesión exitoso',
+      res.json({
         token,
         user: {
           id: user.idUsuario,
           username: user.Username,
           email: user.Email,
-          role: user.id_tipo_usuario,
-          roleName: user.nombre_rol
-        }
-      };
-
-      // Solo añadir redirectTo si es admin
-      if (user.id_tipo_usuario === ROLES.ADMIN) {
-        response.redirectTo = '/admin/user-management';
-      }
-
-      res.json(response);
+          tipo: user.id_tipo_usuario
+        },
+        redirectTo: ROLE_REDIRECTS[user.id_tipo_usuario]
+      });
 
     } catch (error) {
       console.error('Error en login:', error);
