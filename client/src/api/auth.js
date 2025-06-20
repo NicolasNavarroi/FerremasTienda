@@ -1,30 +1,20 @@
-// src/api/auth.js
 import api from './config';
-
-export const register = async (userData) => {
-  try {
-    const { data } = await api.post('/auth/register', {
-      username: userData.username,
-      email: userData.email,
-      password: userData.password
-    });
-    return data;
-  } catch (error) {
-    throw error.response.data;
-  }
-};
 
 export const login = async (credentials) => {
   try {
-    const { data } = await api.post('/auth/login', {
-      email: credentials.email,
-      password: credentials.password
-    });
+    const { data } = await api.post('/auth/login', credentials);
+    
     localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user)); // Guardar datos básicos del usuario
-    return data;
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return {
+      ...data,
+      isAdmin: data.user.tipo === 1,
+      isEmployee: data.user.tipo === 2,
+      isClient: data.user.tipo === 3
+    };
   } catch (error) {
-    throw error.response.data;
+    throw error.response?.data || error;
   }
 };
 
@@ -34,5 +24,11 @@ export const logout = () => {
 };
 
 export const getCurrentUser = () => {
-  return JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem('user'));
+  return user ? {
+    ...user,
+    isAdmin: user.tipo === 1,
+    isEmployee: user.tipo === 2,
+    isClient: user.tipo === 3
+  } : null;
 };

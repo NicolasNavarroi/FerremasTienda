@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login({ email, password });
-      // La redirección ahora se maneja en AuthContext
+      const response = await login({ email, password });
+      
+      // Redirigir a la ruta previa o a la página por defecto del rol
+      const from = location.state?.from?.pathname || response.redirectTo || '/';
+      navigate(from, { replace: true });
+      
     } catch (err) {
       setError(err.error || 'Error al iniciar sesión');
+      console.error('Login error:', err);
     }
   };
 

@@ -21,29 +21,28 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/products" element={<ProductCatalog />} />
           <Route path="/products/:id" element={<ProductDetail />} />
-
-          {/* HomePage accesible a todos */}
           <Route path="/" element={<HomePage />} />
 
-          {/* Rutas protegidas con DashboardLayout */}
+          {/* Rutas protegidas - Layout común */}
           <Route element={<PrivateRoute allowedRoles={[1, 2, 3]}><DashboardLayout /></PrivateRoute>}>
-            {/* Rutas de Admin - CORREGIDO */}
+            {/* Rutas específicas para cada rol */}
             <Route path="/admin/usermanagement" element={
               <PrivateRoute allowedRoles={[1]}>
                 <UserManagement />
               </PrivateRoute>
             } />
-            {/* Rutas de Empleado - CORREGIDO */}
+            
             <Route path="/employee/productmanagement" element={
               <PrivateRoute allowedRoles={[2]}>
                 <ProductManagement />
               </PrivateRoute>
             } />
+            
             <Route path="/profile" element={
               <PrivateRoute allowedRoles={[3]}>
                 <ProfilePage />
               </PrivateRoute>
-            }/>
+            } />
           </Route>
         </Routes>
       </AuthProvider>

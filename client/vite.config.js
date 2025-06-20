@@ -14,6 +14,15 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      // Proxy para Transbank (actualizado)
+      // Proxy para Transbank (actualizado)
+      '/transbank': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/transbank/, '')
+      },
+      // Proxy para back-end
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,

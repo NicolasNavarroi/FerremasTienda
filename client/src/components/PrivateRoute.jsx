@@ -1,21 +1,27 @@
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
 
 export const PrivateRoute = ({ children, allowedRoles }) => {
-  const { user, loading, isAdmin, isEmployee, isClient } = useAuth();
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-  if (loading) return <div>Cargando...</div>;
-  if (!user) return <Navigate to="/login" />;
+  if (loading) {
+    return <div className="loading">Cargando...</div>;
+  }
 
-  // Verificar roles
-  const userRole = user.tipo;
-  const hasAccess = allowedRoles.includes(userRole);
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-  if (!hasAccess) {
-    // Redirigir a la página principal según el rol
-    if (isAdmin) return <Navigate to="/admin/usermanagement" replace />;
-    if (isEmployee) return <Navigate to="/employee/productmanagement" replace />;
-    return <Navigate to="/" replace />;
+  if (!allowedRoles.includes(user.tipo)) {
+    // Redirección basada en el rol del usuario
+    const redirectPath = {
+      1: '/admin/usermanagement',    // Admin
+      2: '/employee/productmanagement', // Employee
+      3: '/client/profilepage'                 // Client
+    }[user.tipo] || '/';
+    
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;

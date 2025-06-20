@@ -1,87 +1,68 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { login as loginService, register as registerService, logout as logoutService, getCurrentUser } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
+import * as authApi from '../api/auth';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState({
+    user: null,
+    loading: true
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-        }
-      } catch (error) {
-        console.error("Error loading user:", error);
-      } finally {
-        setLoading(false);
-      }
+    const initializeAuth = async () => {
+      const user = authApi.getCurrentUser();
+      setAuthState({
+        user,
+        loading: false
+      });
     };
-    loadUser();
+    initializeAuth();
   }, []);
 
   const login = async (credentials) => {
   try {
-    const data = await loginService(credentials);
-    setUser(data.user);
+    const response = await authApi.login(credentials);
+    setAuthState({
+      user: response.user,
+      loading: false
+    });
     
-    // Redirección basada en el tipo de usuario
-    console.log('Tipo de usuario:', data.user.tipo); // Para depuración
-    
-    switch(parseInt(data.user.tipo)) { // Asegurarse que es número
-      case 1: // Admin
-        navigate('/admin/UserManagement');
-        break;
-      case 2: // Empleado
-        navigate('/employee/productmanagement');
-        break;
-      case 3: // Cliente
-        navigate('/');
-        break;
-      default:
-        navigate('/admin/UserManagement');
+    // Redirigir según rol después de login exitoso
+    if (response.user.tipo === 1) {
+      navigate('/admin/usermanagement');
+    } else if (response.user.tipo === 2) {
+      navigate('/employee/productmanagement');
+    } else {
+      navigate('/profile');
     }
     
-    return data;
+    return response;
   } catch (error) {
+    setAuthState(prev => ({ ...prev, loading: false }));
     throw error;
   }
 };
 
-  const register = async (userData) => {
-    try {
-      const data = await registerService(userData);
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  };
-
   const logout = () => {
-    logoutService();
-    setUser(null);
+    authApi.logout();
+    setAuthState({
+      user: null,
+      loading: false
+    });
     navigate('/login');
   };
 
-  const isAdmin = user?.tipo === 1;
-  const isEmployee = user?.tipo === 2;
-  const isClient = user?.tipo === 3;
-
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      register, 
-      logout, 
-      isAdmin,
-      isEmployee,
-      isClient,
-      loading 
+    <AuthContext.Provider value={{
+      ...authState,
+      login,
+      logout,
+      isAdmin: authState.user?.tipo === 1,
+      isEmployee: authState.user?.tipo === 2,
+      isClient: authState.user?.tipo === 3
     }}>
       {children}
     </AuthContext.Provider>
