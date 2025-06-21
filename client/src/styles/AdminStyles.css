@@ -48,7 +48,7 @@
 
 .employee-list {
   width: 100%;
-  background: white;
+  background: rgb(23, 107, 2);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   border-collapse: collapse;
@@ -58,16 +58,16 @@
 .employee-list td {
   padding: 12px 15px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #c5ff24;
 }
 
 .employee-list th {
-  background: #f5f5f5;
+  background: #215cff;
   font-weight: 600;
 }
 
 .employee-list tr:hover {
-  background-color: #f9f9f9;
+  background-color: #960505;
 }
 
 /* Botones de acción */
@@ -139,7 +139,7 @@ button:hover {
 }
 
 .modal {
-  background: white;
+  background: rgb(0, 0, 0);
   padding: 20px;
   border-radius: 8px;
   width: 400px;
@@ -181,7 +181,7 @@ button:hover {
 }
 
 .status-badge.active {
-  background: #e8f5e9;
+  background: #ff45c1;
   color: #2e7d32;
 }
 

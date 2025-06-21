@@ -1,3 +1,4 @@
+// src/api/auth.js
 import api from './config';
 
 export const login = async (credentials) => {
@@ -13,6 +14,15 @@ export const login = async (credentials) => {
       isEmployee: data.user.tipo === 2,
       isClient: data.user.tipo === 3
     };
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+export const registerEmployee = async (employeeData) => {
+  try {
+    const { data } = await api.post('/admin/trabajadores', employeeData);
+    return data;
   } catch (error) {
     throw error.response?.data || error;
   }

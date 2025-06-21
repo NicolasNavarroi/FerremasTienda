@@ -1,27 +1,45 @@
 import api from './config';
 
-export const getUsers = async (role = null) => {
-  const params = role ? { role } : {};
-  const { data } = await api.get('/admin/usuarios', { params });
-  return data;
-};
-
-export const getUser = async (id) => {
-  const { data } = await api.get(`/admin/usuarios/${id}`);
-  return data;
+export const getUsers = async () => {
+  try {
+    const { data } = await api.get('/admin/trabajadores');
+    return data.trabajadores || data; // Adaptación para diferentes estructuras de respuesta
+  } catch (error) {
+    console.error('Error en getUsers:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export const createUser = async (userData) => {
-  const { data } = await api.post('/admin/usuarios', userData);
-  return data;
+  try {
+    const { data } = await api.post('/admin/trabajadores', {
+      username: userData.username,
+      email: userData.email,
+      clave: userData.clave
+    });
+    return data;
+  } catch (error) {
+    console.error('Error en createUser:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export const updateUser = async (id, userData) => {
-  const { data } = await api.put(`/admin/usuarios/${id}`, userData);
-  return data;
+  try {
+    const { data } = await api.put(`/admin/users/${id}`, userData);
+    return data;
+  } catch (error) {
+    console.error('Error en updateUser:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export const deleteUser = async (id) => {
-  await api.delete(`/admin/usuarios/${id}`);
-  return id;
+  try {
+    await api.delete(`/admin/users/${id}`);
+    return id;
+  } catch (error) {
+    console.error('Error en deleteUser:', error.response?.data || error.message);
+    throw error;
+  }
 };
