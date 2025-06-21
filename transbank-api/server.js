@@ -39,7 +39,7 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`\nServidor Webpay iniciado en http://localhost:${PORT}`);
   console.log(`Endpoint de prueba: http://localhost:${PORT}/transbank/ping`);
