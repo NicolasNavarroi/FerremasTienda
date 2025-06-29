@@ -1,0 +1,145 @@
+/* src/pages/client/CartPageStyles.css */
+
+.cart-container {
+  max-width: 800px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.cart-container h2 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.cart-item {
+  border-bottom: 1px solid #eee;
+  padding: 1rem 0;
+}
+
+.cart-item h3 {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 0.3rem;
+}
+
+.cart-item p {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.cart-total {
+  margin-top: 2rem;
+  text-align: right;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #34495e;
+}
+
+.cart-container button {
+  margin-top: 2rem;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: block;
+  margin-left: auto;
+}
+
+.cart-container button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.cart-container button:hover:not(:disabled) {
+  background-color: #219150;
+}
+
+.message,
+.error {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 5px;
+}
+
+.message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.error {
+  background-color: #fdecea;
+  color: #c0392b;
+}
+
+@media (max-width: 600px) {
+  .cart-container {
+    padding: 1.2rem;
+  }
+
+  .cart-total {
+    text-align: left;
+  }
+
+  .cart-container button {
+    width: 100%;
+  }
+}
+
+.item-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quantity-controls button {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.quantity-controls button:hover {
+  background-color: #219150;
+}
+
+.btn-remove {
+  background-color: #e74c3c !important;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  color: white;
+  border: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-remove:hover {
+  background-color: #c0392b !important;
+}
+

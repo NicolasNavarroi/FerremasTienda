@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: #f4f6f8;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .dashboard-content {
@@ -9,62 +11,104 @@
   flex: 1;
 }
 
+/* ===== SIDEBAR ===== */
 .dashboard-sidebar {
-  width: 250px;
-  background-color: #34495e;
+  width: 260px;
+  background-color: #0a3d62; /* azul industrial oscuro */
   color: white;
-  padding: 1rem;
+  padding: 2rem 1.5rem;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .dashboard-sidebar h3 {
-  margin-bottom: 1rem;
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #4a6278;
+  border-bottom: 1px solid #3c5d84;
+  color: #f1c40f;
 }
 
+/* Navegación lateral */
 .dashboard-sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .sidebar-link {
   color: #ecf0f1;
   text-decoration: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
 }
 
-.sidebar-link:hover {
-  background-color: #4a6278;
+.sidebar-link:hover,
+.sidebar-link.active {
+  background-color: #1e5c91;
+  color: #ffffff;
 }
 
+/* ===== CONTENIDO PRINCIPAL ===== */
 .dashboard-main {
   flex: 1;
   padding: 2rem;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.03);
+  overflow-y: auto;
 }
 
+/* ===== ESTADOS ===== */
 .loading {
   padding: 2rem;
   text-align: center;
+  color: #555;
+  font-size: 1.1rem;
 }
 
+/* Paneles con acento por tipo de usuario */
 .admin-panel {
   border-left: 4px solid #e74c3c;
-  padding-left: 0.5rem;
-  margin-bottom: 1.5rem;
+  padding-left: 1rem;
+  margin-bottom: 2rem;
 }
 
 .employee-panel {
-  border-left: 4px solid #3498db;
-  padding-left: 0.5rem;
-  margin-bottom: 1.5rem;
+  border-left: 4px solid #2980b9;
+  padding-left: 1rem;
+  margin-bottom: 2rem;
 }
 
 .client-panel {
   border-left: 4px solid #2ecc71;
-  padding-left: 0.5rem;
-  margin-bottom: 1.5rem;
+  padding-left: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .dashboard-content {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .dashboard-sidebar h3 {
+    width: 100%;
+    border: none;
+  }
+
+  .dashboard-main {
+    padding: 1rem;
+  }
 }

@@ -24,34 +24,27 @@
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log('Enviando filtros:', filters); // Debug 1
       const response = await getProducts(filters);
       
-      console.log('Respuesta completa de la API:', response); // Debug 2
+      // Debug: Ver respuesta de la API
+      console.log('API Response:', response);
       
+      // Manejo robusto de la respuesta
       let productsData = [];
       if (Array.isArray(response)) {
         productsData = response;
-      } else if (response?.data) {
+      } else if (response && Array.isArray(response.data)) {
         productsData = response.data;
-      } else if (response?.productos) {
-        productsData = response.productos;
+      } else {
+        console.error('Formato de respuesta inesperado:', response);
       }
 
-      console.log('Datos procesados:', productsData); // Debug 3
-
-      const productsWithImages = productsData.map(product => {
-        const imageUrl = product.imagen 
-          ? `http://localhost:3000${product.imagen}`
-          : '/placeholder-product.jpg';
-        
-        console.log(`Imagen para ${product.nombre}:`, imageUrl); // Debug 4
-        
-        return {
-          ...product,
-          imagen: imageUrl
-        };
-      });
+      const productsWithImages = productsData.map(product => ({
+        ...product,
+        imagen: product.imagen 
+          ? `${process.env.VITE_API_URL.replace('/api/v1', '')}${product.imagen}`
+          : '/placeholder-product.jpg'
+      }));
 
       setProducts(productsWithImages);
     } catch (error) {
@@ -85,7 +78,7 @@ const handleSearch = (e) => {
 
         <div className="catalog-container">
           <div className="catalog-header">
-            <h1>Catálogo de Productos</h1>
+            <h1>Catálogo de Productos Version Nico</h1>
 
             <div className="search-filter-container">
               <form onSubmit={handleSearch} className="search-form">

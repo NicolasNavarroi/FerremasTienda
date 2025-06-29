@@ -1,51 +1,63 @@
 .navbar {
-  background-color: #2c3e50;
+  background-color: #0a3d62; /* azul industrial oscuro */
   color: white;
-  padding: 1rem;
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .navbar-brand a {
-  color: white;
+  color: #f1c40f; /* acento amarillo para marca */
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.navbar-brand a:hover {
+  color: #f39c12;
 }
 
 .navbar-links {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: center;
 }
 
-.navbar-links a, .navbar-links button {
+.navbar-links a,
+.navbar-links button {
   color: white;
   text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   background: none;
   border: none;
-  cursor: pointer;
   font-size: 1rem;
+  font-weight: 500;
+  font-family: 'Segoe UI', sans-serif;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background-color 0.3s ease, color 0.2s;
 }
 
-.navbar-links a:hover, .navbar-links button:hover {
-  opacity: 0.8;
+.navbar-links a:hover,
+.navbar-links button:hover {
+  background-color: #1e5c91;
+  color: #ecf0f1;
 }
 
 .user-menu {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.2rem;
 }
 
 .icon, .icon-logo {
@@ -59,3 +71,80 @@
 .employee-link {
   color: #3498db !important;
 }
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .navbar-links {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .navbar-links a,
+  .navbar-links button {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
+  }
+
+  .user-menu {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 0.5rem;
+  }
+}
+
+/* Animación del logo */
+@keyframes slideFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animated-logo {
+  animation: slideFadeIn 0.8s ease-out forwards;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.back-button:hover {
+  color: #f1c40f;
+}
+
