@@ -1,11 +1,10 @@
 const { configureWebpay } = require('../config/transbank.config');
 
-// Crear transacción
 const createTransaction = async (req, res) => {
   try {
     const { buy_order, session_id, amount, return_url } = req.body;
-
-    if (!buy_order || !session_id || amount == null || !return_url) {
+    
+    if (!buy_order || !session_id || !amount || !return_url) {
       throw new Error('Faltan parámetros requeridos');
     }
 
@@ -19,7 +18,7 @@ const createTransaction = async (req, res) => {
     res.json({
       success: true,
       token: response.token,
-      url: response.url,
+      url: `${response.url}?token_ws=${response.token}`,
       details: {
         buy_order,
         amount,
@@ -38,11 +37,10 @@ const createTransaction = async (req, res) => {
   }
 };
 
-// Confirmar transacción (commit)
 const commitTransaction = async (req, res) => {
   try {
     const token = req.body.token || req.query.token_ws;
-
+    
     if (!token) {
       throw new Error('Token no proporcionado');
     }
@@ -50,6 +48,7 @@ const commitTransaction = async (req, res) => {
     const tx = configureWebpay();
     const response = await tx.commit(token);
 
+    // Detección de pago rechazado (tarjeta de prueba)
     if (response.status === "INITIALIZED" && response.card_detail?.card_number === "0568") {
       return res.json({
         success: false,
@@ -77,13 +76,13 @@ const commitTransaction = async (req, res) => {
   }
 };
 
-// Obtener estado de la transacción
 const getTransactionStatus = async (req, res) => {
   try {
     const { token } = req.params;
     const tx = configureWebpay();
     const response = await tx.status(token);
 
+    // Detección especial para tarjeta de prueba rechazada
     if (response.status === "INITIALIZED" && response.card_detail?.card_number === "0568") {
       return res.json({
         success: false,

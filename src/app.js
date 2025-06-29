@@ -7,7 +7,7 @@ const { createServer } = require('http');
 const path = require('path');
 const errorHandler = require('./middleware/errorHandler');
 const pool = require('./config/db');
-const adminRedirect = require('./middleware/adminRedirect'); // Cambio clave aquí
+const adminRedirect = require('./middleware/adminRedirect');
 
 const app = express();
 const httpServer = createServer(app);
@@ -43,12 +43,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 4. Middleware de redirección para admin
-app.use(adminRedirect); // Ahora debería funcionar correctamente
+app.use(adminRedirect);
 
-// 5. Archivos estáticos
-app.use('/public', express.static(path.join(__dirname, 'public'), {
-  maxAge: '7d'
-}));
+// Configuración correcta de archivos estáticos
+app.use('/uploads/products', express.static(
+  path.join(__dirname, 'public/uploads/products'),
+  {
+    maxAge: '7d',
+    setHeaders: (res, path) => {
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  }
+));
+
 
 // 6. Sistema de Rutas
 const apiRouter = express.Router();
@@ -80,24 +87,22 @@ apiRouter.use('/promociones', require('./routes/promocion'));
 apiRouter.use('/ventas', require('./routes/ventas'));
 apiRouter.use('/tarjetas', require('./routes/tarjeta'));
 
+
+
 // Montar todas las rutas bajo /api/v1
 app.use('/api/v1', apiRouter);
 
-// 7. Manejo de Errores
+// 7. Manejo de errores
 app.use((req, res, next) => {
   res.status(404).json({
     error: 'Endpoint no encontrado',
-    availableEndpoints: [
-      '/api/v1/auth/login',
-      '/api/v1/productos',
-      '/api/v1/ventas',
-    ]
+    endpoint: req.originalUrl
   });
 });
 
 app.use(errorHandler);
 
-// 8. Inicio del Servidor
+// 8. Inicio del servidor
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`Servidor en http://localhost:${PORT}`);

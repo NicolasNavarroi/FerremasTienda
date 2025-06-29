@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productoController = require('../controllers/productoController');
 const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
+const { singleUpload } = require('../config/productoMulter'); // Importamos el Multer específico
 
 // Rutas públicas
 router.get('/', productoController.listarProductos);
@@ -12,12 +13,14 @@ router.get('/:id/disponibilidad', productoController.obtenerDisponibilidad);
 router.post('/', 
   authMiddleware, 
   checkRole([1, 2]), // Admin y Trabajadores
+  singleUpload, // Middleware de Multer para imagen
   productoController.crearProducto
 );
 
 router.put('/:id', 
   authMiddleware, 
   checkRole([1, 2]),
+  singleUpload, // Middleware de Multer para imagen
   productoController.actualizarProducto
 );
 

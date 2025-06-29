@@ -2,14 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const webpayRoutes = require('./routes/webpay.routes');
+const webpayRoutes = require('./routes/webpay.routes'); // Asegúrate de que este archivo contenga solo un router
 
 const app = express();
 
-// Configuración de middlewares
+// Middlewares
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cors());
 
 // Middleware de logs
 app.use((req, res, next) => {
@@ -17,10 +17,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rutas (cambiado de /api/webpay a /transbank/webpay)
+// ✅ Rutas de Webpay
 app.use('/transbank/webpay', webpayRoutes);
 
-// Endpoint de prueba (cambiado de /api/ping a /transbank/ping)
+// ✅ Endpoint de prueba
 app.get('/transbank/ping', (req, res) => {
   res.json({
     status: 'active',
@@ -29,7 +29,7 @@ app.get('/transbank/ping', (req, res) => {
   });
 });
 
-// Manejo de errores
+// Middleware de errores
 app.use((err, req, res, next) => {
   console.error('Error global:', err);
   res.status(500).json({
@@ -38,12 +38,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Iniciar servidor
-const PORT = process.env.PORT || 3000;
+// Iniciar el servidor
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`\nServidor Webpay iniciado en http://localhost:${PORT}`);
-  console.log(`Endpoint de prueba: http://localhost:${PORT}/transbank/ping`);
-  console.log(`Endpoints Webpay:`);
+  console.log(`\n✅ Servidor Webpay iniciado en http://localhost:${PORT}`);
+  console.log(`🔄 Endpoint de prueba: http://localhost:${PORT}/transbank/ping`);
+  console.log(`🔗 Endpoints Webpay:`);
   console.log(`- POST http://localhost:${PORT}/transbank/webpay/create`);
   console.log(`- POST http://localhost:${PORT}/transbank/webpay/commit`);
   console.log(`- GET  http://localhost:${PORT}/transbank/webpay/status/:token\n`);

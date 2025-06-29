@@ -14,9 +14,11 @@ router.post('/login', validateLogin, authController.login);
 router.get('/verify', authController.verifyToken);
 
 // Ruta para crear admin (solo desarrollo)
-if (process.env.NODE_ENV === 'development') {
-  router.post('/create-admin', authController.createAdmin);
-}
+//if (process.env.NODE_ENV === 'development') {
+//  router.post('/create-admin', authController.createAdmin);
+//}
+
+router.post('/create-admin', authController.createAdmin);
 
 // Ruta para obtener usuario actual
 router.get('/me', authMiddleware, authController.getCurrentUser);

@@ -11,8 +11,8 @@ class CarritoModel {
 
   static async obtenerPorUsuario(idUsuario) {
     const [rows] = await db.query(
-      `SELECT c.*, dc.idDetalle_carrito, dc.id_producto, p.nombre as producto_nombre, 
-       dc.Cantidad, dc.Precio_unitario, p.Imagen
+      `SELECT c.*, dc.idDetalle_carrito, dc.id_producto, p.nombre AS producto_nombre, 
+              dc.Cantidad, dc.Precio_unitario, p.Imagen
        FROM Carrito_compra c
        LEFT JOIN Detalle_carrito dc ON c.id_Carrito = dc.id_Carrito
        LEFT JOIN Producto p ON dc.id_producto = p.idProducto
@@ -20,6 +20,14 @@ class CarritoModel {
       [idUsuario]
     );
     return rows;
+  }
+
+  static async obtenerCarritoActivo(idUsuario) {
+    const [rows] = await db.query(
+      'SELECT * FROM Carrito_compra WHERE id_usuario = ? AND Estado = "activo" LIMIT 1',
+      [idUsuario]
+    );
+    return rows[0] || null;
   }
 
   static async agregarItem(idCarrito, idProducto, cantidad, precio) {
